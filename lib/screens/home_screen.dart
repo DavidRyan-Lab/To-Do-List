@@ -123,15 +123,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       dueDate: picked,
                     );
                     setState(() => _todos.add(todo));
-                    await _save();
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    _save();
                     if (picked != null) {
-                      await NotificationService.scheduleNotification(
+                      NotificationService.scheduleNotification(
                         id: todo.id.hashCode,
                         title: todo.title,
                         dateTime: picked!,
                       );
                     }
-                    if (ctx.mounted) Navigator.pop(ctx);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black87,
@@ -183,87 +183,4 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Text(
-              DateFormat('M월 d일').format(DateTime.now()),
-              style: const TextStyle(color: Colors.grey),
-            ),
-          ),
-        ],
-      ),
-      body: _todos.isEmpty
-          ? const Center(
-              child: Text('할 일을 추가해 보세요!',
-                  style: TextStyle(color: Colors.grey, fontSize: 16)))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                if (todayTodos.isNotEmpty) ...[
-                  const Text('오늘',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  ...todayTodos.map((t) => _buildTile(t)),
-                  const SizedBox(height: 16),
-                ],
-                if (otherTodos.isNotEmpty) ...[
-                  const Text('기타',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
-                  const SizedBox(height: 8),
-                  ...otherTodos.map((t) => _buildTile(t)),
-                ],
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addTodo,
-        backgroundColor: Colors.black87,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildTile(Todo todo) {
-    return Dismissible(
-      key: Key(todo.id),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        decoration: BoxDecoration(
-          color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) => _deleteTodo(todo),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListTile(
-          leading: GestureDetector(
-            onTap: () => _toggleTodo(todo),
-            child: Icon(
-              todo.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: todo.isDone ? Colors.green : Colors.grey,
-            ),
-          ),
-          title: Text(
-            todo.title,
-            style: TextStyle(
-              decoration: todo.isDone ? TextDecoration.lineThrough : null,
-              color: todo.isDone ? Colors.grey : Colors.black87,
-            ),
-          ),
-          subtitle: todo.dueDate != null
-              ? Text(
-                  DateFormat('MM월 dd일 HH:mm').format(todo.dueDate!),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                )
-              : null,
-        ),
-      ),
-    );
-  }
-}
+            padding: const EdgeInset
