@@ -3,11 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/todo.dart';
 
 class WidgetService {
-  static const _appGroupId = 'com.example.todo_app';
-
   static Future<void> updateWidget(List<Todo> todos) async {
-    await HomeWidget.setAppGroupId(_appGroupId);
-
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final todayTodos = todos.where((t) =>
         !t.isDone &&
