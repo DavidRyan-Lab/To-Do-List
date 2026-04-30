@@ -10,17 +10,10 @@ class NotificationService {
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     await _plugin.initialize(const InitializationSettings(android: android));
 
-    // 알림 권한 요청
-    await _plugin
-        .resolvePlatformSpecificImplementation
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    // 정확한 알람 권한 요청
-    await _plugin
-        .resolvePlatformSpecificImplementation
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestExactAlarmsPermission();
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidPlugin?.requestNotificationsPermission();
+    await androidPlugin?.requestExactAlarmsPermission();
   }
 
   static Future<void> scheduleNotification({
