@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../models/todo.dart';
@@ -41,109 +42,195 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _addTodo() {
     final ctrl = TextEditingController();
+    final alarmCtrl = TextEditingController();
     DateTime? picked;
+    String alarmUnit = '분';
 
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModal) => Padding(
-          padding: EdgeInsets.fromLTRB(
-              24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('새 할 일',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: ctrl,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: '할 일을 입력하세요',
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              GestureDetector(
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: ctx,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                  );
-                  if (date == null) return;
-                  final time = await showTimePicker(
-                    context: ctx,
-                    initialTime: TimeOfDay.now(),
-                  );
-                  if (time == null) return;
-                  setModal(() {
-                    picked = DateTime(
-                        date.year, date.month, date.day, time.hour, time.minute);
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 18, color: Colors.grey),
-                      const SizedBox(width: 8),
-                      Text(
-                        picked == null
-                            ? '날짜·시간 설정 (선택)'
-                            : DateFormat('MM월 dd일 HH:mm').format(picked!),
-                        style: TextStyle(
-                            color: picked == null ? Colors.grey : Colors.black87),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (ctrl.text.trim().isEmpty) return;
-                    final todo = Todo(
-                      id: _uuid.v4(),
-                      title: ctrl.text.trim(),
-                      dueDate: picked,
-                    );
-                    setState(() => _todos.add(todo));
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    _save();
-                    if (picked != null) {
-                      NotificationService.scheduleNotification(
-                        id: todo.id.hashCode,
-                        title: todo.title,
-                        dateTime: picked!,
-                      );
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black87,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
+        builder: (ctx, setModal) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('새 할 일',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 할 일 입력
+                TextField(
+                  controller: ctrl,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: '할 일을 입력하세요',
+                    border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('추가', style: TextStyle(color: Colors.white)),
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+
+                // 날짜·시간 설정
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: ctx,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date == null) return;
+                    final time = await showTimePicker(
+                      context: ctx,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time == null) return;
+                    setModal(() {
+                      picked = DateTime(date.year, date.month, date.day,
+                          time.hour, time.minute);
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today,
+                            size: 18, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Text(
+                          picked == null
+                              ? '날짜·시간 설정 (선택)'
+                              : DateFormat('MM월 dd일 HH:mm').format(picked!),
+                          style: TextStyle(
+                              color: picked == null
+                                  ? Colors.grey
+                                  : Colors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 알람 설정
+                const Text('알람 설정 (선택)',
+                    style: TextStyle(fontSize: 13, color: Colors.grey)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    // 숫자 입력
+                    Expanded(
+                      flex: 2,
+                      child: TextField(
+                        controller: alarmCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly
+                        ],
+                        decoration: InputDecoration(
+                          hintText: '숫자',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // 단위 선택
+                    Expanded(
+                      flex: 3,
+                      child: Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: alarmUnit,
+                            items: ['분', '시', '일', '주']
+                                .map((u) => DropdownMenuItem(
+                                    value: u, child: Text(u)))
+                                .toList(),
+                            onChanged: (v) =>
+                                setModal(() => alarmUnit = v!),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('취소', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (ctrl.text.trim().isEmpty) return;
+                final todo = Todo(
+                  id: _uuid.v4(),
+                  title: ctrl.text.trim(),
+                  dueDate: picked,
+                );
+                setState(() => _todos.add(todo));
+                if (ctx.mounted) Navigator.pop(ctx);
+                _save();
+
+                // 날짜·시간 알람
+                if (picked != null) {
+                  NotificationService.scheduleNotification(
+                    id: todo.id.hashCode,
+                    title: todo.title,
+                    dateTime: picked!,
+                  );
+                }
+
+                // 알람 설정
+                if (alarmCtrl.text.isNotEmpty) {
+                  final num = int.parse(alarmCtrl.text);
+                  Duration duration;
+                  switch (alarmUnit) {
+                    case '분':
+                      duration = Duration(minutes: num);
+                      break;
+                    case '시':
+                      duration = Duration(hours: num);
+                      break;
+                    case '일':
+                      duration = Duration(days: num);
+                      break;
+                    case '주':
+                      duration = Duration(days: num * 7);
+                      break;
+                    default:
+                      duration = Duration(minutes: num);
+                  }
+                  final alarmTime = DateTime.now().add(duration);
+                  NotificationService.scheduleNotification(
+                    id: todo.id.hashCode + 1,
+                    title: '⏰ ${todo.title}',
+                    dateTime: alarmTime,
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('추가', style: TextStyle(color: Colors.white)),
+            ),
+          ],
         ),
       ),
     );
@@ -156,6 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _deleteTodo(Todo todo) {
     NotificationService.cancel(todo.id.hashCode);
+    NotificationService.cancel(todo.id.hashCode + 1);
     setState(() => _todos.remove(todo));
     _save();
   }
@@ -200,14 +288,20 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 if (todayTodos.isNotEmpty) ...[
                   const Text('오늘',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey)),
                   const SizedBox(height: 8),
                   ...todayTodos.map((t) => _buildTile(t)),
                   const SizedBox(height: 16),
                 ],
                 if (otherTodos.isNotEmpty) ...[
                   const Text('기타',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.grey)),
                   const SizedBox(height: 8),
                   ...otherTodos.map((t) => _buildTile(t)),
                 ],
@@ -245,7 +339,9 @@ class _HomeScreenState extends State<HomeScreen> {
           leading: GestureDetector(
             onTap: () => _toggleTodo(todo),
             child: Icon(
-              todo.isDone ? Icons.check_circle : Icons.radio_button_unchecked,
+              todo.isDone
+                  ? Icons.check_circle
+                  : Icons.radio_button_unchecked,
               color: todo.isDone ? Colors.green : Colors.grey,
             ),
           ),
