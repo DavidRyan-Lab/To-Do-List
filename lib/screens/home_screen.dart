@@ -59,7 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 할 일 입력
                 TextField(
                   controller: ctrl,
                   autofocus: true,
@@ -70,8 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // 날짜·시간 설정
                 GestureDetector(
                   onTap: () async {
                     final date = await showDatePicker(
@@ -117,14 +114,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // 알람 설정
                 const Text('알람 설정 (선택)',
                     style: TextStyle(fontSize: 13, color: Colors.grey)),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    // 숫자 입력
                     Expanded(
                       flex: 2,
                       child: TextField(
@@ -141,12 +135,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // 단위 선택
                     Expanded(
                       flex: 3,
                       child: Container(
-                        padding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.grey.shade300),
                           borderRadius: BorderRadius.circular(12),
@@ -195,8 +187,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 }
 
-                // 알람 설정
-                if (alarmCtrl.text.isNotEmpty) {
+                // N분/시/일/주 전 알람
+                if (alarmCtrl.text.isNotEmpty && picked != null) {
                   final num = int.parse(alarmCtrl.text);
                   Duration duration;
                   switch (alarmUnit) {
@@ -215,12 +207,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     default:
                       duration = Duration(minutes: num);
                   }
-                  final alarmTime = DateTime.now().add(duration);
-                  NotificationService.scheduleNotification(
-                    id: todo.id.hashCode + 1,
-                    title: '⏰ ${todo.title}',
-                    dateTime: alarmTime,
-                  );
+                  final alarmTime = picked!.subtract(duration);
+                  if (alarmTime.isAfter(DateTime.now())) {
+                    NotificationService.scheduleNotification(
+                      id: todo.id.hashCode + 1,
+                      title: '⏰ ${todo.title}',
+                      dateTime: alarmTime,
+                    );
+                  }
                 }
               },
               style: ElevatedButton.styleFrom(
